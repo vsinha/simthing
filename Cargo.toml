@@ -1,0 +1,12 @@
+[package]
+name = "simthing"
+version = "0.1.0"
+authors = ["Ty Overby <ty@pre-alpha.com>"]
+edition = "2018"
+
+[dependencies]
+ggez = "0.5.0-rc.0"
+
+[dependencies.cgmath]
+version = "0.17.0"
+features = ["mint"]
