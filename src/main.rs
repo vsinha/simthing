@@ -3,12 +3,15 @@ use ggez::conf::*;
 use ggez::event::{self, EventHandler, EventsLoop, KeyCode, KeyMods};
 use ggez::*;
 use ggez::{Context, ContextBuilder, GameResult};
-use rand::Rng;
+
+mod agent;
+use agent::Agent;
+
+mod config;
+use config::{HEIGHT, WIDTH};
 
 mod ring;
-
-static HEIGHT: f32 = 400.0;
-static WIDTH: f32 = 600.0;
+mod vec;
 
 fn window_setup() -> (Context, EventsLoop) {
     ContextBuilder::new("simthing", "Ty Overby | Viraj Sinha")
@@ -28,24 +31,12 @@ fn main() {
     }
 }
 
-struct Agent {
-    position: Vector2<f32>,
-    velocity: Vector2<f32>,
-    target: Vector2<f32>,
-    trail: Vec<Vector2<f32>>,
-}
-
 struct MyGame {
     circle_mesh: ggez::graphics::Mesh,
     target_mesh: ggez::graphics::Mesh,
     trail_mesh: ggez::graphics::Mesh,
     camera_pos: Vector3<f32>,
     agents: Vec<Agent>,
-}
-
-fn random_vec2(w: f32, h: f32) -> Vector2<f32> {
-    let mut rng = rand::thread_rng();
-    Vector2::new(rng.gen_range(0., w), rng.gen_range(0., h))
 }
 
 impl MyGame {
@@ -78,25 +69,14 @@ impl MyGame {
             Color::from_rgb(40, 40, 40),
         )?;
 
-        let agents = (0..10).map(|_i| {
-            let position = random_vec2(WIDTH, HEIGHT);
-            let velocity = random_vec2(WIDTH, HEIGHT);
-            let target = random_vec2(WIDTH, HEIGHT);
-            let trail = (0..10).map(|_i| position.clone()).collect();
-            Agent {
-                position,
-                velocity,
-                target,
-                trail,
-            }
-        });
+        let agents = (0..10).map(|_i| Agent::new()).collect();
 
         Ok(MyGame {
             circle_mesh,
             target_mesh,
             trail_mesh,
             camera_pos: Vector3::new(0.0, 0.0, 0.0),
-            agents: agents.collect(),
+            agents,
         })
     }
 }
@@ -104,19 +84,8 @@ impl MyGame {
 impl EventHandler for MyGame {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         for agent in &mut self.agents {
-            // pick a new target location
-            if rand::random() {
-                agent.target = random_vec2(WIDTH, HEIGHT);
-            }
-            let new_direction = Vector2::normalize(agent.target - agent.position);
-            agent.velocity = Vector2::normalize(agent.velocity + new_direction) * 1.0;
-            let mut prev_position = agent.position;
-            agent.position += agent.velocity;
-            for position in agent.trail.iter_mut() {
-                let temp = *position;
-                *position = prev_position;
-                prev_position = temp;
-            }
+            agent.pick_random_target();
+            agent.update();
         }
         Ok(())
     }
